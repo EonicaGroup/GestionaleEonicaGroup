@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestionale Eonica Group</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press: 160ms;
+  --dur-ui: 200ms;
+  --dur-modal: 260ms;
+
+  --accent: #22437e;
+  --accent-soft: #eef2f9;
+  --ink: #14171c;
+  --muted: #5b6472;
+  --line: #dfe3e9;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --danger: #b3261e;
+  --danger-soft: #fdeceb;
+  --ok: #17683a;
+  --ok-soft: #e9f5ee;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+h1,h2,h3{margin:0;line-height:1.05;letter-spacing:-0.02em;font-weight:650}
+h1{font-size:1.5rem}
+h2{font-size:1.1875rem}
+h3{font-size:1rem;letter-spacing:-0.01em}
+p{margin:0 0 0.75rem}
+.num{font-variant-numeric: tabular-nums}
+
+.lbl{
+  display:block;
+  font-size:0.6875rem;
+  letter-spacing:0.04em;
+  text-transform:uppercase;
+  font-weight:600;
+  color:var(--muted);
+  margin-bottom:0.25rem;
+}
+.hint{font-size:0.8125rem;color:var(--muted)}
+
+/* ---------- controlli ---------- */
+input,select,textarea{
+  font-family:inherit;font-size:0.9375rem;line-height:1.5;color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:0.375rem;
+  padding:0.5rem 0.625rem;
+  width:100%;
+  min-height:2.75rem;
+}
+textarea{min-height:5rem;resize:vertical}
+input:focus-visible,select:focus-visible,textarea:focus-visible,
+button:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+input[readonly]{background:#f1f3f6;color:var(--muted)}
+input.invalid,select.invalid{border-color:var(--danger)}
+.field{margin-bottom:0.875rem}
+.field-err{
+  display:none;
+  font-size:0.8125rem;
+  color:var(--danger);
+  margin-top:0.25rem;
+}
+.field-err.on{display:block}
+
+.btn{
+  font-family:inherit;font-size:0.9375rem;font-weight:550;
+  min-height:2.75rem;min-width:2.75rem;
+  padding:0.5rem 1rem;
+  border-radius:0.375rem;
+  border:1px solid var(--line);
+  background:var(--surface);
+  color:var(--ink);
+  cursor:pointer;
+  transition: transform var(--dur-press) var(--ease-out),
+              background-color var(--dur-press) var(--ease-out),
+              border-color var(--dur-press) var(--ease-out);
+}
+.btn:active{transform:scale(0.97)}
+.btn[data-busy="1"]{transform:scale(0.97)}
+.btn:disabled{opacity:0.55;cursor:default;transform:none}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-quiet{border-color:transparent;background:transparent;color:var(--accent)}
+.btn-sm{min-height:2.25rem;padding:0.25rem 0.625rem;font-size:0.875rem}
+.btn-icon{min-height:2.75rem;min-width:2.75rem;padding:0.25rem;line-height:1}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover:not(:disabled){background:var(--accent-soft);border-color:#c9d3e6}
+  .btn-primary:hover:not(:disabled){background:#1b3767;border-color:#1b3767}
+  .btn-quiet:hover:not(:disabled){background:var(--accent-soft)}
+  tbody tr:hover{background:#fafbfc}
+}
+
+/* ---------- struttura ---------- */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(255,255,255,0.82);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--line);
+}
+.topbar-in{
+  max-width:88rem;margin:0 auto;padding:0.625rem 1.25rem;
+  display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+}
+.brand{font-weight:700;letter-spacing:-0.02em;font-size:1.0625rem;margin-right:0.5rem}
+.tabs{display:flex;gap:0.25rem;flex:1}
+.tab{
+  font-family:inherit;font-size:0.9375rem;font-weight:550;
+  min-height:2.75rem;padding:0.5rem 0.875rem;
+  background:transparent;border:1px solid transparent;border-radius:0.375rem;
+  color:var(--muted);cursor:pointer;
+  transition: transform var(--dur-press) var(--ease-out),
+              background-color var(--dur-press) var(--ease-out),
+              color var(--dur-press) var(--ease-out);
+}
+.tab:active{transform:scale(0.97)}
+.tab[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:650}
+.tab:disabled{opacity:0.4;cursor:default}
+.user{display:flex;align-items:center;gap:0.625rem;font-size:0.875rem;color:var(--muted)}
+
+main{max-width:88rem;margin:0 auto;padding:1.25rem}
+.screen[hidden]{display:none}
+.card{
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:0.5rem;padding:1.125rem;margin-bottom:1.125rem;
+}
+.card-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:0.875rem;flex-wrap:wrap}
+.row{display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end}
+.grid{display:grid;gap:0 0.875rem}
+.g2{grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))}
+.spread{display:flex;gap:0.625rem;flex-wrap:wrap;align-items:center}
+.grow{flex:1;min-width:12rem}
+
+table{width:100%;border-collapse:collapse;font-size:0.875rem}
+th{
+  text-align:left;font-size:0.6875rem;letter-spacing:0.04em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;padding:0.5rem 0.5rem;border-bottom:1px solid var(--line);
+  white-space:nowrap;
+}
+td{padding:0.5rem 0.5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+.tbl-wrap{overflow-x:auto}
+.empty{padding:1.75rem 0.5rem;text-align:center;color:var(--muted)}
+
+.pill{
+  display:inline-block;padding:0.125rem 0.5rem;border-radius:1rem;
+  font-size:0.75rem;font-weight:600;letter-spacing:0.02em;
+  background:var(--accent-soft);color:var(--accent);white-space:nowrap;
+}
+.pill-quiet{background:#eef0f3;color:var(--muted)}
+
+/* ---------- sezione a scomparsa ---------- */
+.disc-body{display:none}
+.disc-body.on{
+  display:block;
+  animation:disc var(--dur-ui) var(--ease-out);
+}
+@keyframes disc{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* ---------- errore ---------- */
+.errbox{
+  display:none;
+  border:1px solid #e7b4b0;background:var(--danger-soft);
+  border-left:4px solid var(--danger);
+  border-radius:0.375rem;padding:0.875rem 1rem;margin-bottom:1.125rem;
+}
+.errbox.on{display:block;animation:disc var(--dur-ui) var(--ease-out)}
+.errbox h3{color:var(--danger);margin-bottom:0.375rem}
+.errbox pre{
+  margin:0 0 0.75rem;white-space:pre-wrap;word-break:break-word;
+  font-family:inherit;font-size:0.9375rem;line-height:1.5;color:#5c1a16;
+}
+.okbox{
+  display:none;
+  border:1px solid #b8ddc6;background:var(--ok-soft);border-left:4px solid var(--ok);
+  border-radius:0.375rem;padding:0.75rem 1rem;margin-bottom:1.125rem;color:var(--ok);font-weight:550;
+}
+.okbox.on{display:block;animation:disc var(--dur-ui) var(--ease-out)}
+
+/* ---------- modale ---------- */
+.veil{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(20,23,28,0.42);
+  display:none;align-items:center;justify-content:center;padding:1.25rem;
+  opacity:0;transition:opacity var(--dur-modal) var(--ease-out);
+}
+.veil.show{display:flex}
+.veil.in{opacity:1}
+.modal{
+  background:var(--surface);border-radius:0.625rem;padding:1.25rem;
+  width:min(30rem,100%);max-height:90vh;overflow:auto;
+  transform:scale(0.95);opacity:0;
+  transition:transform var(--dur-modal) var(--ease-out), opacity var(--dur-modal) var(--ease-out);
+  transform-origin:center;
+}
+.veil.in .modal{transform:scale(1);opacity:1}
+.veil.out{opacity:0;transition-duration:180ms}
+.veil.out .modal{transform:scale(0.95);opacity:0;transition-duration:180ms}
+.recap{border:1px solid var(--line);border-radius:0.375rem;margin:0.875rem 0}
+.recap div{display:flex;justify-content:space-between;gap:1rem;padding:0.5rem 0.75rem;border-bottom:1px solid var(--line)}
+.recap div:last-child{border-bottom:0}
+.recap b{font-variant-numeric:tabular-nums}
+
+/* ---------- login ---------- */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.25rem}
+.login-card{background:var(--surface);border:1px solid var(--line);border-radius:0.625rem;padding:2rem;width:min(24rem,100%);text-align:center}
+
+/* ---------- preventivo ---------- */
+.ctx{
+  background:var(--surface);border:1px solid var(--line);border-radius:0.5rem;
+  padding:0.875rem 1.125rem;margin-bottom:1.125rem;
+  position:sticky;top:3.9rem;z-index:20;
+}
+.crumb{display:flex;gap:0.375rem;align-items:center;flex-wrap:wrap;font-size:0.8125rem;color:var(--muted);margin-bottom:0.375rem}
+.crumb button{font-size:0.8125rem;min-height:2.75rem;padding:0 0.375rem}
+.ctx-main{display:flex;gap:1rem;align-items:baseline;flex-wrap:wrap;justify-content:space-between}
+.ctx-meta{color:var(--muted);font-size:0.875rem;display:flex;gap:0.875rem;flex-wrap:wrap;align-items:baseline}
+.prev-layout{display:grid;grid-template-columns:minmax(0,1fr) 19rem;gap:1.125rem;align-items:start}
+@media (max-width:65rem){.prev-layout{grid-template-columns:minmax(0,1fr)}}
+.econ{position:sticky;top:9.5rem}
+.econ-line{display:flex;justify-content:space-between;gap:0.75rem;padding:0.4375rem 0;border-bottom:1px solid var(--line);font-size:0.875rem}
+.econ-line:last-child{border-bottom:0}
+.econ-line b{font-variant-numeric:tabular-nums;font-weight:650}
+.econ-line.bad b{color:var(--danger)}
+.econ-line.big{font-size:1rem;padding-top:0.625rem}
+.econ-line.big b{font-size:1.25rem;letter-spacing:-0.02em}
+.righe input,.righe select{min-height:2.5rem;padding:0.375rem 0.5rem;font-size:0.875rem}
+.righe td{padding:0.3125rem 0.25rem}
+.righe .w-qta{width:5.5rem}
+.righe .w-um{width:5rem}
+.righe .w-eur{width:7rem}
+.ord-btns{display:flex;gap:0.125rem}
+.actions{display:flex;gap:0.625rem;flex-wrap:wrap;align-items:center;margin-top:0.25rem}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-property:opacity !important;transition-duration:200ms !important;animation:none !important}
+  .btn:active,.tab:active,.btn[data-busy="1"]{transform:none !important}
+  .modal{transform:none !important}
+  .veil.in .modal{transform:none !important}
+}
+@media (prefers-reduced-transparency: reduce){
+  .topbar{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+
+/* ---------- STAMPA ---------- */
+#printroot{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff !important;margin:0 !important;padding:0 !important}
+  body *{visibility:hidden !important}
+  #printroot,#printroot *{visibility:visible !important}
+  #printroot{
+    display:block !important;
+    position:absolute;left:0;top:0;width:210mm;
+  }
+  .topbar,main,.veil,.no-print{display:none !important}
+  .prev-page{
+    width:210mm;height:297mm;
+    padding:16mm 15mm;
+    page-break-after:always;break-after:page;
+    background:#fff;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
+    color:#14171c;
+    font-family:system-ui,-apple-system,sans-serif;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .prev-page:last-child{page-break-after:auto;break-after:auto}
+}
+.prev-page{
+  width:210mm;min-height:297mm;padding:16mm 15mm;background:#fff;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  font-family:system-ui,-apple-system,sans-serif;color:#14171c;
+  display:flex;flex-direction:column;
+}
+.p-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #22437e;padding-bottom:5mm;margin-bottom:6mm}
+.p-brand{font-size:15pt;font-weight:700;letter-spacing:-0.02em;color:#22437e;line-height:1.05}
+.p-brand small{display:block;font-size:8pt;font-weight:500;color:#5b6472;letter-spacing:0.04em;text-transform:uppercase;margin-top:1mm}
+.p-doc{text-align:right;font-size:9pt;color:#5b6472;line-height:1.5}
+.p-doc b{display:block;font-size:12pt;color:#14171c;letter-spacing:-0.02em}
+.p-meta{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-bottom:6mm;font-size:9pt;line-height:1.5}
+.p-meta .k{font-size:7.5pt;letter-spacing:0.04em;text-transform:uppercase;color:#5b6472;font-weight:600}
+.p-meta .v{font-weight:600}
+.p-tbl{width:100%;border-collapse:collapse;font-size:9pt}
+.p-tbl th{background:#eef2f9;color:#22437e;font-size:7.5pt;letter-spacing:0.04em;text-transform:uppercase;
+  text-align:left;padding:2.5mm 2mm;border-bottom:1px solid #c9d3e6}
+.p-tbl td{padding:2.2mm 2mm;border-bottom:1px solid #e6e9ee;vertical-align:top}
+.p-tbl .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.p-sec{background:#f6f7f9;font-weight:700;font-size:8pt;letter-spacing:0.04em;text-transform:uppercase;color:#5b6472}
+.p-tot{margin-top:5mm;margin-left:auto;width:78mm;font-size:9.5pt}
+.p-tot div{display:flex;justify-content:space-between;padding:1.8mm 0;border-bottom:1px solid #e6e9ee}
+.p-tot div:last-child{border-bottom:0;border-top:2px solid #22437e;margin-top:1mm;padding-top:2.5mm;font-size:11.5pt;font-weight:700;color:#22437e}
+.p-tot span:last-child{font-variant-numeric:tabular-nums}
+.p-note{margin-top:5mm;font-size:8.5pt;line-height:1.5;color:#5b6472;border-left:2px solid #c9d3e6;padding-left:3mm}
+.p-foot{margin-top:auto;padding-top:5mm;border-top:1px solid #e6e9ee;font-size:7.5pt;color:#5b6472;line-height:1.5;display:flex;justify-content:space-between;gap:4mm}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen" class="login" hidden>
+  <div class="login-card">
+    <h1 style="margin-bottom:0.375rem">Eonica Group</h1>
+    <p class="hint" style="margin-bottom:1.5rem">Gestionale eventi e preventivi</p>
+    <div id="loginErr" class="errbox" style="text-align:left">
+      <h3>Accesso non riuscito</h3>
+      <pre id="loginErrMsg"></pre>
+      <button class="btn btn-sm" type="button" onclick="document.getElementById('loginErr').classList.remove('on')">Chiudi</button>
+    </div>
+    <button id="btnLogin" class="btn btn-primary" style="width:100%" type="button">Accedi con Microsoft</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <div class="topbar">
+    <div class="topbar-in">
+      <span class="brand">Eonica</span>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tabClienti"    aria-selected="true"  type="button">Clienti</button>
+        <button class="tab" role="tab" id="tabEventi"     aria-selected="false" type="button">Eventi</button>
+        <button class="tab" role="tab" id="tabPreventivo" aria-selected="false" type="button" disabled>Preventivo</button>
+      </div>
+      <div class="user">
+        <span id="userEmail" class="num"></span>
+        <button id="btnLogout" class="btn btn-sm" type="button">Esci</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div id="errBox" class="errbox" role="alert" aria-live="assertive">
+      <h3 id="errTitle">Il database ha rifiutato l'operazione</h3>
+      <pre id="errMsg"></pre>
+      <div class="spread">
+        <button id="errClose" class="btn btn-sm" type="button">Chiudi</button>
+        <button id="errNewVersion" class="btn btn-sm btn-primary" type="button" hidden>Emetti nuova versione</button>
+      </div>
+    </div>
+    <div id="okBox" class="okbox" role="status" aria-live="polite"></div>
+
+    <!-- ---------- CLIENTI ---------- -->
+    <section id="scrClienti" class="screen">
+      <div class="card">
+        <div class="card-head">
+          <h2>Clienti</h2>
+          <button id="cliNuovo" class="btn btn-primary" type="button">Nuovo cliente</button>
+        </div>
+        <div class="row" style="margin-bottom:0.875rem">
+          <div class="grow">
+            <label class="lbl" for="cliSearch">Cerca per ragione sociale o partita IVA</label>
+            <input id="cliSearch" type="search" placeholder="Es. Comune di Roma oppure 01234567890">
+          </div>
+          <label class="spread" style="gap:0.375rem;min-height:2.75rem">
+            <input id="cliSoloAttivi" type="checkbox" checked style="width:auto;min-height:auto">
+            <span>Solo attivi</span>
+          </label>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Ragione sociale</th><th>Referente</th><th>Città</th>
+              <th class="r">Eventi</th><th>Stato</th><th></th>
+            </tr></thead>
+            <tbody id="cliBody"></tbody>
+          </table>
+        </div>
+        <div id="cliEmpty" class="empty" hidden>Nessun cliente corrisponde alla ricerca.</div>
+      </div>
+
+      <div id="cliForm" class="card" hidden>
+        <div class="card-head">
+          <h2 id="cliFormTitle">Nuovo cliente</h2>
+          <button id="cliAnnulla" class="btn btn-sm" type="button">Chiudi senza salvare</button>
+        </div>
+        <div class="grid g2">
+          <div class="field">
+            <label class="lbl" for="c_ragione_sociale">Ragione sociale</label>
+            <input id="c_ragione_sociale" data-req="1">
+            <div class="field-err" id="e_c_ragione_sociale">La ragione sociale è obbligatoria.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_tipo_soggetto">Tipo soggetto</label>
+            <select id="c_tipo_soggetto"><option value="privato">Privato</option><option value="pubblico">Ente pubblico</option></select>
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_referente_nome">Referente</label>
+            <input id="c_referente_nome">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_referente_email">Email referente</label>
+            <input id="c_referente_email" type="email" data-kind="email">
+            <div class="field-err" id="e_c_referente_email">Indirizzo email non valido.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_referente_telefono">Telefono referente</label>
+            <input id="c_referente_telefono">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_partita_iva">Partita IVA</label>
+            <input id="c_partita_iva" data-kind="piva" inputmode="numeric">
+            <div class="field-err" id="e_c_partita_iva">La partita IVA italiana ha 11 cifre.</div>
+          </div>
+        </div>
+        <div class="grid g3">
+          <div class="field">
+            <label class="lbl" for="c_indirizzo">Indirizzo</label>
+            <input id="c_indirizzo">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_cap">CAP</label>
+            <input id="c_cap" data-kind="cap" inputmode="numeric">
+            <div class="field-err" id="e_c_cap">Il CAP ha 5 cifre.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_citta">Città</label>
+            <input id="c_citta">
+          </div>
+          <div class="field">
+            <label class="lbl" for="c_provincia">Provincia</label>
+            <input id="c_provincia" maxlength="2" style="text-transform:uppercase">
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl" for="c_note">Note</label>
+          <textarea id="c_note"></textarea>
+        </div>
+
+        <button id="cliFattDisc" class="btn btn-quiet btn-sm" type="button" aria-expanded="false">Dati di fatturazione elettronica</button>
+        <div id="cliFatt" class="disc-body" style="padding-top:0.75rem">
+          <div class="grid g3">
+            <div class="field">
+              <label class="lbl" for="c_codice_fiscale">Codice fiscale</label>
+              <input id="c_codice_fiscale" style="text-transform:uppercase">
+            </div>
+            <div class="field">
+              <label class="lbl" for="c_codice_destinatario_sdi">Codice destinatario SDI</label>
+              <input id="c_codice_destinatario_sdi" maxlength="7" data-kind="sdi" style="text-transform:uppercase">
+              <div class="field-err" id="e_c_codice_destinatario_sdi">Il codice SDI ha 6 caratteri (privati) o 7 (PA).</div>
+            </div>
+            <div class="field">
+              <label class="lbl" for="c_pec">PEC</label>
+              <input id="c_pec" type="email" data-kind="email">
+              <div class="field-err" id="e_c_pec">Indirizzo PEC non valido.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="cliSalva" class="btn btn-primary" type="button">Salva cliente</button>
+          <span id="cliAttivoWrap" class="spread" style="gap:0.375rem" hidden>
+            <input id="c_attivo" type="checkbox" style="width:auto;min-height:auto">
+            <label for="c_attivo">Cliente attivo</label>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- EVENTI ---------- -->
+    <section id="scrEventi" class="screen" hidden>
+      <div class="card">
+        <div class="card-head">
+          <h2>Eventi</h2>
+          <button id="evtNuovo" class="btn btn-primary" type="button">Nuovo evento</button>
+        </div>
+        <div class="row" style="margin-bottom:0.875rem">
+          <div class="grow">
+            <label class="lbl" for="evtSearch">Cerca per titolo</label>
+            <input id="evtSearch" type="search" placeholder="Es. Festival, Convegno, Premiazione">
+          </div>
+          <div style="min-width:12rem">
+            <label class="lbl" for="evtFiltroStato">Stato</label>
+            <select id="evtFiltroStato">
+              <option value="">Tutti gli stati</option>
+              <option value="bozza">Bozza</option>
+              <option value="confermato">Confermato</option>
+              <option value="in_corso">In corso</option>
+              <option value="concluso">Concluso</option>
+              <option value="annullato">Annullato</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Titolo</th><th>Cliente</th><th>Data</th>
+              <th class="r">Ospiti</th><th>Stato</th><th class="r">Preventivi</th><th></th>
+            </tr></thead>
+            <tbody id="evtBody"></tbody>
+          </table>
+        </div>
+        <div id="evtEmpty" class="empty" hidden>Nessun evento corrisponde ai filtri.</div>
+      </div>
+
+      <div id="evtForm" class="card" hidden>
+        <div class="card-head">
+          <h2 id="evtFormTitle">Nuovo evento</h2>
+          <button id="evtAnnulla" class="btn btn-sm" type="button">Chiudi senza salvare</button>
+        </div>
+        <div class="grid g2">
+          <div class="field">
+            <label class="lbl" for="v_cliente_id">Cliente</label>
+            <select id="v_cliente_id" data-req="1"></select>
+            <div class="field-err" id="e_v_cliente_id">Seleziona il cliente.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_titolo">Titolo dell'evento</label>
+            <input id="v_titolo" data-req="1">
+            <div class="field-err" id="e_v_titolo">Il titolo è obbligatorio.</div>
+          </div>
+        </div>
+        <div class="grid g3">
+          <div class="field">
+            <label class="lbl" for="v_tipologia">Tipologia</label>
+            <input id="v_tipologia" placeholder="Convegno, gala, concerto…">
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_data_evento">Data</label>
+            <input id="v_data_evento" type="date" data-req="1">
+            <div class="field-err" id="e_v_data_evento">La data è obbligatoria.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_numero_ospiti">Numero ospiti</label>
+            <input id="v_numero_ospiti" type="number" min="0" class="num">
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_ora_inizio">Ora inizio</label>
+            <input id="v_ora_inizio" type="time">
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_ora_fine">Ora fine</label>
+            <input id="v_ora_fine" type="time">
+            <div class="field-err" id="e_v_ora_fine">L'ora di fine precede l'ora di inizio.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_stato">Stato</label>
+            <select id="v_stato">
+              <option value="bozza">Bozza</option>
+              <option value="confermato">Confermato</option>
+              <option value="in_corso">In corso</option>
+              <option value="concluso">Concluso</option>
+              <option value="annullato">Annullato</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid g3">
+          <div class="field">
+            <label class="lbl" for="v_location_nome">Location</label>
+            <input id="v_location_nome">
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_location_indirizzo">Indirizzo location</label>
+            <input id="v_location_indirizzo">
+          </div>
+          <div class="field">
+            <label class="lbl" for="v_location_citta">Città location</label>
+            <input id="v_location_citta">
+          </div>
+        </div>
+        <div class="field">
+          <label class="lbl" for="v_note_interne">Note interne (non visibili al cliente)</label>
+          <textarea id="v_note_interne"></textarea>
+        </div>
+        <div class="actions">
+          <button id="evtSalva" class="btn btn-primary" type="button">Salva evento</button>
+        </div>
+      </div>
+
+      <div id="evtPrev" class="card" hidden>
+        <div class="card-head">
+          <div>
+            <h2 id="evtPrevTitle">Preventivi dell'evento</h2>
+            <p class="hint" id="evtPrevSub" style="margin:0.25rem 0 0"></p>
+          </div>
+          <div class="spread">
+            <button id="evtPrevChiudi" class="btn btn-sm" type="button">Chiudi</button>
+            <button id="prevCrea" class="btn btn-primary" type="button">Crea primo preventivo</button>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Versione</th><th>Stato</th><th>Numero</th>
+              <th class="r">Imponibile</th><th class="r">Totale ivato</th><th></th>
+            </tr></thead>
+            <tbody id="prevBody"></tbody>
+          </table>
+        </div>
+        <div id="prevEmpty" class="empty" hidden>Nessun preventivo per questo evento.</div>
+      </div>
+    </section>
+
+    <!-- ---------- PREVENTIVO ---------- -->
+    <section id="scrPreventivo" class="screen" hidden>
+      <div class="ctx">
+        <div class="crumb">
+          <button class="btn btn-quiet btn-sm" id="crumbClienti" type="button">Clienti</button>
+          <span>›</span>
+          <button class="btn btn-quiet btn-sm" id="crumbEventi" type="button">Eventi</button>
+          <span>›</span>
+          <button class="btn btn-quiet btn-sm" id="crumbEvento" type="button">Torna all'evento</button>
+        </div>
+        <div class="ctx-main">
+          <div>
+            <h2 id="ctxEvento">—</h2>
+            <div class="ctx-meta">
+              <span id="ctxCliente">—</span>
+              <span id="ctxData" class="num">—</span>
+              <span id="ctxVersione" class="pill">—</span>
+              <span id="ctxStato" class="pill pill-quiet">—</span>
+            </div>
+          </div>
+          <div class="spread">
+            <button id="btnCopiaLink" class="btn btn-sm" type="button">Copia link cliente</button>
+            <button id="btnStampa" class="btn btn-sm" type="button">Stampa PDF</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prev-layout">
+        <div>
+          <div class="card">
+            <div class="card-head"><h3>Testata</h3><span class="hint" id="testataStato"></span></div>
+            <div class="grid g3">
+              <div class="field">
+                <label class="lbl" for="p_numero">Numero preventivo</label>
+                <input id="p_numero" placeholder="Es. 2027/0042">
+              </div>
+              <div class="field">
+                <label class="lbl" for="p_modalita">Modalità di quotazione</label>
+                <select id="p_modalita">
+                  <option value="a_misura">A misura (righe dettagliate)</option>
+                  <option value="a_corpo">A corpo (importo complessivo)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="lbl" for="p_aliquota">Aliquota IVA</label>
+                <select id="p_aliquota" class="num">
+                  <option value="0">0%</option><option value="4">4%</option>
+                  <option value="5">5%</option><option value="10">10%</option>
+                  <option value="22" selected>22%</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="lbl" for="p_imponibile">Imponibile €</label>
+                <input id="p_imponibile" type="number" step="0.01" min="0" class="num" data-kind="eur">
+                <div class="field-err" id="e_p_imponibile">L'imponibile non può essere negativo.</div>
+              </div>
+              <div class="field">
+                <label class="lbl" for="p_totale">Totale ivato €</label>
+                <input id="p_totale" type="number" step="0.01" min="0" class="num">
+                <div class="field-err" id="e_p_totale">Scostamento oltre un centesimo dal calcolo: il database rifiuterà il salvataggio.</div>
+              </div>
+              <div class="field" style="align-self:end">
+                <button id="p_ricalcola" class="btn btn-sm" type="button" style="width:100%">Ricalcola dall’imponibile</button>
+              </div>
+            </div>
+            <div class="field" id="p_motivazioneWrap" hidden>
+              <label class="lbl" for="p_motivazione">Motivazione dello scarto (obbligatoria a corpo, minimo 10 caratteri)</label>
+              <textarea id="p_motivazione" style="min-height:3.5rem"></textarea>
+              <div class="field-err" id="e_p_motivazione">Servono almeno 10 caratteri.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>Righe del preventivo</h3>
+                <p class="hint" style="margin:0.25rem 0 0">Il totale di riga è calcolato: quantità × prezzo unitario.</p>
+              </div>
+              <button id="rigaAdd" class="btn btn-sm btn-primary" type="button">Aggiungi riga</button>
+            </div>
+            <div class="tbl-wrap righe">
+              <table>
+                <thead><tr>
+                  <th style="width:9rem">Sezione</th><th>Descrizione</th>
+                  <th class="r">Q.tà</th><th>U.m.</th>
+                  <th class="r">Prezzo un.</th><th class="r">Costo un.</th>
+                  <th class="r">Totale</th><th>Al cliente</th><th style="width:6rem">Ordine</th><th></th>
+                </tr></thead>
+                <tbody id="righeBody"></tbody>
+              </table>
+            </div>
+            <div id="righeEmpty" class="empty" hidden>Nessuna riga. Aggiungi la prima voce del preventivo.</div>
+          </div>
+
+          <div class="card">
+            <button id="storicoDisc" class="btn btn-quiet btn-sm" type="button" aria-expanded="false">Storico degli stati</button>
+            <div id="storicoBody" class="disc-body" style="padding-top:0.75rem">
+              <div class="tbl-wrap">
+                <table>
+                  <thead><tr><th>Data</th><th>Da</th><th>A</th><th>Attore</th><th></th></tr></thead>
+                  <tbody id="storicoRows"></tbody>
+                </table>
+              </div>
+              <div id="storicoEmpty" class="empty" hidden>Nessun movimento registrato.</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card econ">
+            <h3 style="margin-bottom:0.75rem">Quadratura ed economics</h3>
+            <div class="econ-line"><span>Somma righe visibili</span><b id="ecSomma" class="num">0,00 €</b></div>
+            <div class="econ-line" id="ecScartoLine"><span>Scarto sull'imponibile</span><b id="ecScarto" class="num">0,00 €</b></div>
+            <div class="econ-line"><span>Righe visibili al cliente</span><b id="ecNRighe" class="num">0</b></div>
+            <div class="econ-line"><span>Costo totale</span><b id="ecCosto" class="num">—</b></div>
+            <div class="econ-line"><span>Margine</span><b id="ecMargine" class="num">—</b></div>
+            <div class="econ-line big"><span>Margine %</span><b id="ecMarginePc" class="num">—</b></div>
+            <p class="hint" style="margin:0.75rem 0 0">Costo e margine provengono dalla vista <code>preventivo_economics</code> e si aggiornano al salvataggio. Non sono modificabili.</p>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-bottom:0.75rem">Azioni</h3>
+            <div class="actions" style="flex-direction:column;align-items:stretch">
+              <button id="btnSalva" class="btn btn-primary" type="button">Salva</button>
+              <button id="btnInvia" class="btn" type="button">Invia al cliente</button>
+              <button id="btnNuovaVersione" class="btn" type="button">Emetti nuova versione</button>
+            </div>
+            <p class="hint" id="azioniNota" style="margin:0.75rem 0 0"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ MODALE INVIO ============ -->
+<div id="veilInvio" class="veil" role="dialog" aria-modal="true" aria-labelledby="invioTitle">
+  <div class="modal">
+    <h2 id="invioTitle">Invia al cliente</h2>
+    <p class="hint" style="margin-top:0.375rem">Dopo l'invio il contenuto economico diventa immutabile e il preventivo è visibile al cliente tramite il suo link. Controlla i numeri.</p>
+    <div class="recap">
+      <div><span>Imponibile</span><b id="mImponibile" class="num"></b></div>
+      <div><span>Totale ivato</span><b id="mTotale" class="num"></b></div>
+      <div><span>Righe visibili al cliente</span><b id="mRighe" class="num"></b></div>
+    </div>
+    <div class="spread" style="justify-content:flex-end">
+      <button id="invioAnnulla" class="btn" type="button">Annulla</button>
+      <button id="invioConferma" class="btn btn-primary" type="button">Invia al cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALE SNAPSHOT ============ -->
+<div id="veilSnap" class="veil" role="dialog" aria-modal="true" aria-labelledby="snapTitle">
+  <div class="modal" style="width:min(44rem,100%)">
+    <h2 id="snapTitle">Contenuto congelato</h2>
+    <p class="hint" id="snapSub" style="margin-top:0.375rem"></p>
+    <div id="snapBody" style="margin-top:0.875rem"></div>
+    <div class="spread" style="justify-content:flex-end;margin-top:1rem">
+      <button id="snapChiudi" class="btn btn-primary" type="button">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<div id="printroot"></div>
+
+<script>
+/* ============================================================
+   db — UNICO punto di accesso ai dati. Nessun altro codice
+   in questo file chiama supabase direttamente.
+   ============================================================ */
+const SUPABASE_URL = 'https://yyuiofxojvhvobsepdcp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_U9CrNZqZWCNu4Zu_G6gcxQ_WIPEIqoo';
+const LINK_CLIENTE = 'https://nice-plant-08301d010.7.azurestaticapps.net/cliente.html?t=';
+
+const db = (function () {
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  /* Propaga INTEGRALMENTE il messaggio del database. Mai riscriverlo. */
+  function fail(error) {
+    const parts = [];
+    if (error.message) parts.push(error.message);
+    if (error.details && error.details !== error.message) parts.push(error.details);
+    if (error.hint) parts.push('Suggerimento del database: ' + error.hint);
+    const e = new Error(parts.join('\n\n') || 'Errore sconosciuto restituito dal database.');
+    e.raw = error;
+    e.code = error.code;
+    throw e;
+  }
+  const ok = ({ data, error }) => { if (error) fail(error); return data; };
+
+  const CLI_COLS = ['ragione_sociale','referente_nome','referente_email','referente_telefono',
+    'partita_iva','codice_fiscale','codice_destinatario_sdi','pec','indirizzo','cap','citta',
+    'provincia','tipo_soggetto','note','attivo'];
+  const EVT_COLS = ['cliente_id','titolo','tipologia','data_evento','ora_inizio','ora_fine',
+    'numero_ospiti','location_nome','location_indirizzo','location_citta','stato','note_interne'];
+  const RIGA_COLS = ['preventivo_id','sezione','descrizione','quantita','unita_misura',
+    'prezzo_unitario','costo_unitario','totale','visibile_cliente','ordine'];
+
+  /* i campi vuoti vanno omessi, non inviati come stringa vuota */
+  function clean(obj, cols) {
+    const out = {};
+    for (const k of cols) {
+      let v = obj[k];
+      if (v === undefined) continue;
+      if (typeof v === 'string') { v = v.trim(); if (v === '') { out[k] = null; continue; } }
+      out[k] = v;
+    }
+    return out;
+  }
+
+  return {
+    /* ---------- sessione ---------- */
+    async session() { const { data, error } = await sb.auth.getSession(); if (error) fail(error); return data.session; },
+    onAuthChange(cb) { sb.auth.onAuthStateChange((_evt, s) => cb(s)); },
+    async signIn() {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'azure',
+        options: { scopes: 'email openid profile', redirectTo: window.location.href.split('#')[0] }
+      });
+      if (error) fail(error);
+    },
+    async signOut() { const { error } = await sb.auth.signOut(); if (error) fail(error); },
+
+    /* ---------- clienti ---------- */
+    clienti: {
+      async list() {
+        return ok(await sb.from('clienti').select('*').order('ragione_sociale'));
+      },
+      async conteggioEventi() {
+        const rows = ok(await sb.from('eventi').select('id,cliente_id'));
+        const m = {};
+        for (const r of rows) if (r.cliente_id) m[r.cliente_id] = (m[r.cliente_id] || 0) + 1;
+        return m;
+      },
+      async attiviPerSelect() {
+        return ok(await sb.from('clienti').select('id,ragione_sociale').eq('attivo', true).order('ragione_sociale'));
+      },
+      async crea(obj) { return ok(await sb.from('clienti').insert(clean(obj, CLI_COLS)).select().single()); },
+      async aggiorna(id, obj) { return ok(await sb.from('clienti').update(clean(obj, CLI_COLS)).eq('id', id).select().single()); },
+      async setAttivo(id, attivo) { return ok(await sb.from('clienti').update({ attivo }).eq('id', id).select().single()); }
+    },
+
+    /* ---------- eventi ---------- */
+    eventi: {
+      async list() {
+        return ok(await sb.from('eventi').select('*, clienti(id,ragione_sociale)').order('data_evento', { ascending: false }));
+      },
+      async conteggioPreventivi() {
+        const rows = ok(await sb.from('preventivi').select('id,evento_id'));
+        const m = {};
+        for (const r of rows) m[r.evento_id] = (m[r.evento_id] || 0) + 1;
+        return m;
+      },
+      async byId(id) { return ok(await sb.from('eventi').select('*, clienti(id,ragione_sociale)').eq('id', id).single()); },
+      async crea(obj) { return ok(await sb.from('eventi').insert(clean(obj, EVT_COLS)).select().single()); },
+      async aggiorna(id, obj) { return ok(await sb.from('eventi').update(clean(obj, EVT_COLS)).eq('id', id).select().single()); }
+    },
+
+    /* ---------- preventivi ---------- */
+    preventivi: {
+      async byEvento(eventoId) {
+        return ok(await sb.from('preventivi').select('*').eq('evento_id', eventoId).order('versione', { ascending: false }));
+      },
+      async byId(id) {
+        return ok(await sb.from('preventivi').select('*, eventi(*, clienti(id,ragione_sociale))').eq('id', id).single());
+      },
+      async prossimaVersione(eventoId) {
+        return ok(await sb.rpc('prossima_versione', { p_evento_id: eventoId }));
+      },
+      async crea(obj) {
+        return ok(await sb.from('preventivi').insert(obj).select().single());
+      },
+      async aggiornaTestata(id, t) {
+        const patch = {
+          numero: (t.numero || '').trim() || null,
+          imponibile: t.imponibile,
+          aliquota_iva: t.aliquota_iva,
+          totale_ivato: t.totale_ivato,
+          modalita_quotazione: t.modalita_quotazione,
+          motivazione_scarto: (t.motivazione_scarto || '').trim() || null
+        };
+        return ok(await sb.from('preventivi').update(patch).eq('id', id).select().single());
+      },
+      async cambiaStato(id, stato) {
+        return ok(await sb.from('preventivi').update({ stato }).eq('id', id).select().single());
+      },
+      async economics(id) {
+        const r = ok(await sb.from('preventivo_economics').select('*').eq('preventivo_id', id));
+        return r && r[0] ? r[0] : null;
+      },
+      async storico(id) {
+        return ok(await sb.from('preventivo_storico').select('*').eq('preventivo_id', id).order('creato_il'));
+      }
+    },
+
+    /* ---------- righe ---------- */
+    righe: {
+      async byPreventivo(id) {
+        return ok(await sb.from('preventivo_righe').select('*').eq('preventivo_id', id).order('ordine'));
+      },
+      async crea(r) { return ok(await sb.from('preventivo_righe').insert(clean(r, RIGA_COLS)).select().single()); },
+      async creaMolte(rows) {
+        if (!rows.length) return [];
+        return ok(await sb.from('preventivo_righe').insert(rows.map(r => clean(r, RIGA_COLS))).select());
+      },
+      async aggiorna(id, r) { return ok(await sb.from('preventivo_righe').update(clean(r, RIGA_COLS)).eq('id', id).select().single()); },
+      async elimina(id) { const { error } = await sb.from('preventivo_righe').delete().eq('id', id); if (error) fail(error); }
+    }
+  };
+})();
+
+/* ============================================================
+   utilità
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const nfEur = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const eur = (n) => nfEur.format(Number(n || 0)) + ' €';
+const num2 = (n) => Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
+const dataIt = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+const dataOraIt = (t) => t ? new Date(t).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const STATI_PREV = { bozza: 'Bozza', inviato: 'Inviato', confermato: 'Confermato', rifiutato: 'Rifiutato', archiviato: 'Archiviato' };
+const STATI_EVT = { bozza: 'Bozza', confermato: 'Confermato', in_corso: 'In corso', concluso: 'Concluso', annullato: 'Annullato' };
+
+/* ---------- riquadro errore: SEMPRE il messaggio integrale ---------- */
+function showError(err, titolo) {
+  const msg = (err && err.message) ? err.message : String(err);
+  $('errTitle').textContent = titolo || 'Il database ha rifiutato l’operazione';
+  $('errMsg').textContent = msg;
+  const suggerisceVersione = /non e modificabile|non è modificabile|Transizione non ammessa|non e cancellabile|non è cancellabile|non sono modificabili/i.test(msg);
+  $('errNewVersion').hidden = !(suggerisceVersione && stato.preventivo);
+  $('errBox').classList.add('on');
+  $('okBox').classList.remove('on');
+  $('errBox').scrollIntoView({ block: 'nearest' });
+}
+function clearError() { $('errBox').classList.remove('on'); }
+function showOk(testo) {
+  $('okBox').textContent = testo;
+  $('okBox').classList.add('on');
+  clearTimeout(showOk._t);
+  showOk._t = setTimeout(() => $('okBox').classList.remove('on'), 6000);
+}
+
+/* ---------- pulsanti che scrivono: busy al pointer-down, mai doppio invio ---------- */
+function action(btn, fn, etichettaCorso) {
+  let running = false;
+  const arm = () => { if (!btn.disabled) btn.dataset.busy = '1'; };
+  const disarm = () => { if (!running) delete btn.dataset.busy; };
+  btn.addEventListener('pointerdown', arm);
+  btn.addEventListener('pointerup', disarm);
+  btn.addEventListener('pointercancel', disarm);
+  btn.addEventListener('pointerleave', disarm);
+  btn.addEventListener('click', async () => {
+    if (running) return;
+    running = true;
+    btn.dataset.busy = '1';
+    btn.disabled = true;
+    const testo = btn.textContent;
+    btn.textContent = etichettaCorso || 'In corso…';
+    try { await fn(); }
+    catch (e) { showError(e); }
+    finally {
+      running = false; btn.disabled = false; btn.textContent = testo; delete btn.dataset.busy;
+    }
+  });
+}
+
+/* ---------- sezioni a scomparsa ---------- */
+function disclosure(btn, body, apri, chiudi) {
+  btn.addEventListener('click', () => {
+    const on = body.classList.toggle('on');
+    btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+    btn.textContent = on ? chiudi : apri;
+  });
+}
+
+/* ---------- modali con focus trap ---------- */
+function apriModale(veil, primoFocus) {
+  veil._tornaA = document.activeElement;
+  veil.classList.add('show');
+  requestAnimationFrame(() => veil.classList.add('in'));
+  (primoFocus || veil.querySelector('button')).focus();
+  veil._key = (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); chiudiModale(veil); return; }
+    if (e.key !== 'Tab') return;
+    const f = [...veil.querySelectorAll('button,input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(el => !el.disabled && el.offsetParent !== null);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
+  document.addEventListener('keydown', veil._key);
+}
+function chiudiModale(veil) {
+  document.removeEventListener('keydown', veil._key);
+  veil.classList.remove('in');
+  veil.classList.add('out');
+  setTimeout(() => { veil.classList.remove('show', 'out'); if (veil._tornaA) veil._tornaA.focus(); }, 180);
+}
+
+/* ============================================================
+   stato applicativo
+   ============================================================ */
+const stato = {
+  utente: null,
+  clienti: [], eventiCount: {},
+  eventi: [], prevCount: {},
+  clienteInModifica: null,
+  eventoInModifica: null,
+  eventoAperto: null,
+  preventivo: null,
+  righe: [],          // {id?, _tmp, sezione, descrizione, quantita, ...}
+  righeEliminate: [],
+  versioniEvento: []
+};
+
+/* ---------- navigazione a tab, nessuna animazione ---------- */
+function vai(tab) {
+  const map = { clienti: 'scrClienti', eventi: 'scrEventi', preventivo: 'scrPreventivo' };
+  for (const k in map) $(map[k]).hidden = (k !== tab);
+  $('tabClienti').setAttribute('aria-selected', tab === 'clienti');
+  $('tabEventi').setAttribute('aria-selected', tab === 'eventi');
+  $('tabPreventivo').setAttribute('aria-selected', tab === 'preventivo');
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
+   validazione in linea
+   ============================================================ */
+function segnala(input, errId, valido) {
+  input.classList.toggle('invalid', !valido);
+  const e = $(errId); if (e) e.classList.toggle('on', !valido);
+  return valido;
+}
+function validaCampo(input) {
+  const id = input.id, errId = 'e_' + id, v = (input.value || '').trim();
+  const kind = input.dataset.kind;
+  if (input.dataset.req && !v) return segnala(input, errId, false);
+  if (!v) { segnala(input, errId, true); return true; }
+  if (kind === 'email') return segnala(input, errId, /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v));
+  if (kind === 'piva') return segnala(input, errId, /^\d{11}$/.test(v));
+  if (kind === 'cap') return segnala(input, errId, /^\d{5}$/.test(v));
+  if (kind === 'sdi') return segnala(input, errId, /^[A-Za-z0-9]{6,7}$/.test(v));
+  if (kind === 'eur') return segnala(input, errId, Number(v) >= 0);
+  segnala(input, errId, true); return true;
+}
+function attivaValidazione(root) {
+  root.querySelectorAll('input[data-req],input[data-kind],select[data-req]').forEach(el => {
+    el.addEventListener('input', () => validaCampo(el));
+    el.addEventListener('blur', () => validaCampo(el));
+  });
+}
+function validaTutti(root) {
+  let okAll = true;
+  root.querySelectorAll('input[data-req],input[data-kind],select[data-req]').forEach(el => { if (!validaCampo(el)) okAll = false; });
+  return okAll;
+}
+
+/* ============================================================
+   CLIENTI
+   ============================================================ */
+async function caricaClienti() {
+  stato.clienti = await db.clienti.list();
+  stato.eventiCount = await db.clienti.conteggioEventi();
+  renderClienti();
+}
+function renderClienti() {
+  const q = ($('cliSearch').value || '').trim().toLowerCase();
+  const soloAttivi = $('cliSoloAttivi').checked;
+  const righe = stato.clienti.filter(c => {
+    if (soloAttivi && c.attivo === false) return false;
+    if (!q) return true;
+    return (c.ragione_sociale || '').toLowerCase().includes(q) || (c.partita_iva || '').toLowerCase().includes(q);
+  });
+  $('cliBody').innerHTML = righe.map(c => `
+    <tr>
+      <td><b>${esc(c.ragione_sociale)}</b>${c.tipo_soggetto === 'pubblico' ? ' <span class="pill">Ente pubblico</span>' : ''}</td>
+      <td>${esc(c.referente_nome || '—')}</td>
+      <td>${esc(c.citta || '—')}</td>
+      <td class="r num">${stato.eventiCount[c.id] || 0}</td>
+      <td>${c.attivo === false ? '<span class="pill pill-quiet">Non attivo</span>' : '<span class="pill">Attivo</span>'}</td>
+      <td class="r"><button class="btn btn-sm" type="button" data-cli-edit="${c.id}">Apri scheda</button></td>
+    </tr>`).join('');
+  $('cliEmpty').hidden = righe.length > 0;
+  $('cliBody').querySelectorAll('[data-cli-edit]').forEach(b =>
+    b.addEventListener('click', () => apriCliente(b.dataset.cliEdit)));
+}
+const CLI_FIELDS = ['ragione_sociale','referente_nome','referente_email','referente_telefono','partita_iva',
+  'codice_fiscale','codice_destinatario_sdi','pec','indirizzo','cap','citta','provincia','tipo_soggetto','note'];
+function apriCliente(id) {
+  const c = id ? stato.clienti.find(x => x.id === id) : null;
+  stato.clienteInModifica = c ? c.id : null;
+  $('cliFormTitle').textContent = c ? 'Scheda di ' + c.ragione_sociale : 'Nuovo cliente';
+  CLI_FIELDS.forEach(f => { const el = $('c_' + f); if (el) el.value = (c && c[f] != null) ? c[f] : (f === 'tipo_soggetto' ? 'privato' : ''); });
+  $('cliAttivoWrap').hidden = !c;
+  $('c_attivo').checked = c ? c.attivo !== false : true;
+  $('cliForm').querySelectorAll('.invalid').forEach(e => e.classList.remove('invalid'));
+  $('cliForm').querySelectorAll('.field-err.on').forEach(e => e.classList.remove('on'));
+  $('cliForm').hidden = false;
+  $('cliSalva').textContent = c ? 'Salva modifiche' : 'Salva cliente';
+  $('c_ragione_sociale').focus();
+  $('cliForm').scrollIntoView({ block: 'nearest' });
+}
+
+/* ============================================================
+   EVENTI
+   ============================================================ */
+async function caricaEventi() {
+  stato.eventi = await db.eventi.list();
+  stato.prevCount = await db.eventi.conteggioPreventivi();
+  renderEventi();
+}
+function renderEventi() {
+  const q = ($('evtSearch').value || '').trim().toLowerCase();
+  const st = $('evtFiltroStato').value;
+  const righe = stato.eventi.filter(e => {
+    if (st && e.stato !== st) return false;
+    if (!q) return true;
+    return (e.titolo || '').toLowerCase().includes(q);
+  });
+  $('evtBody').innerHTML = righe.map(e => `
+    <tr>
+      <td><b>${esc(e.titolo)}</b>${e.tipologia ? '<br><span class="hint">' + esc(e.tipologia) + '</span>' : ''}</td>
+      <td>${esc(e.clienti ? e.clienti.ragione_sociale : '—')}</td>
+      <td class="num">${esc(dataIt(e.data_evento))}</td>
+      <td class="r num">${e.numero_ospiti ?? '—'}</td>
+      <td><span class="pill pill-quiet">${esc(STATI_EVT[e.stato] || e.stato)}</span></td>
+      <td class="r num">${stato.prevCount[e.id] || 0}</td>
+      <td class="r" style="white-space:nowrap">
+        <button class="btn btn-sm" type="button" data-evt-edit="${e.id}">Modifica</button>
+        <button class="btn btn-sm btn-primary" type="button" data-evt-prev="${e.id}">Preventivi</button>
+      </td>
+    </tr>`).join('');
+  $('evtEmpty').hidden = righe.length > 0;
+  $('evtBody').querySelectorAll('[data-evt-edit]').forEach(b => b.addEventListener('click', () => apriEvento(b.dataset.evtEdit)));
+  $('evtBody').querySelectorAll('[data-evt-prev]').forEach(b => b.addEventListener('click', () => apriPreventiviEvento(b.dataset.evtPrev)));
+}
+const EVT_FIELDS = ['cliente_id','titolo','tipologia','data_evento','ora_inizio','ora_fine','numero_ospiti',
+  'location_nome','location_indirizzo','location_citta','stato','note_interne'];
+async function apriEvento(id) {
+  const e = id ? stato.eventi.find(x => x.id === id) : null;
+  stato.eventoInModifica = e ? e.id : null;
+  const attivi = await db.clienti.attiviPerSelect();
+  $('v_cliente_id').innerHTML = '<option value="">— Seleziona il cliente —</option>' +
+    attivi.map(c => `<option value="${c.id}">${esc(c.ragione_sociale)}</option>`).join('');
+  $('evtFormTitle').textContent = e ? 'Modifica ' + e.titolo : 'Nuovo evento';
+  EVT_FIELDS.forEach(f => { const el = $('v_' + f); if (el) el.value = (e && e[f] != null) ? e[f] : (f === 'stato' ? 'bozza' : ''); });
+  $('evtForm').querySelectorAll('.invalid').forEach(x => x.classList.remove('invalid'));
+  $('evtForm').querySelectorAll('.field-err.on').forEach(x => x.classList.remove('on'));
+  $('evtForm').hidden = false;
+  $('evtSalva').textContent = e ? 'Salva modifiche' : 'Salva evento';
+  $('v_titolo').focus();
+  $('evtForm').scrollIntoView({ block: 'nearest' });
+}
+function validaOre() {
+  const i = $('v_ora_inizio').value, f = $('v_ora_fine').value;
+  return segnala($('v_ora_fine'), 'e_v_ora_fine', !(i && f && f < i));
+}
+
+async function apriPreventiviEvento(eventoId) {
+  const ev = await db.eventi.byId(eventoId);
+  stato.eventoAperto = ev;
+  const lista = await db.preventivi.byEvento(eventoId);
+  stato.versioniEvento = lista;
+  $('evtPrevTitle').textContent = 'Preventivi — ' + ev.titolo;
+  $('evtPrevSub').textContent = (ev.clienti ? ev.clienti.ragione_sociale : 'Cliente non assegnato') + ' · ' + dataIt(ev.data_evento);
+  $('prevCrea').textContent = lista.length ? 'Emetti versione ' + (Math.max(...lista.map(p => p.versione)) + 1) : 'Crea primo preventivo';
+  $('prevBody').innerHTML = lista.map(p => `
+    <tr>
+      <td><b class="num">v${p.versione}</b></td>
+      <td><span class="pill ${p.stato === 'bozza' ? 'pill-quiet' : ''}">${esc(STATI_PREV[p.stato] || p.stato)}</span></td>
+      <td class="num">${esc(p.numero || '—')}</td>
+      <td class="r num">${eur(p.imponibile)}</td>
+      <td class="r num">${eur(p.totale_ivato)}</td>
+      <td class="r"><button class="btn btn-sm btn-primary" type="button" data-prev-open="${p.id}">Apri</button></td>
+    </tr>`).join('');
+  $('prevEmpty').hidden = lista.length > 0;
+  $('evtPrev').hidden = false;
+  $('prevBody').querySelectorAll('[data-prev-open]').forEach(b => b.addEventListener('click', () => aprirePreventivo(b.dataset.prevOpen)));
+  $('evtPrev').scrollIntoView({ block: 'nearest' });
+}
+
+/* ============================================================
+   PREVENTIVO
+   ============================================================ */
+async function aprirePreventivo(id) {
+  clearError();
+  const p = await db.preventivi.byId(id);
+  stato.preventivo = p;
+  stato.eventoAperto = p.eventi;
+  stato.righe = (await db.righe.byPreventivo(id)).map(r => ({ ...r }));
+  stato.righeEliminate = [];
+  stato.versioniEvento = await db.preventivi.byEvento(p.evento_id);
+
+  $('p_numero').value = p.numero || '';
+  $('p_modalita').value = p.modalita_quotazione || 'a_misura';
+  $('p_aliquota').value = String(Number(p.aliquota_iva));
+  $('p_imponibile').value = p.imponibile;
+  $('p_totale').value = p.totale_ivato;
+  $('p_motivazione').value = p.motivazione_scarto || '';
+  toggleMotivazione();
+
+  $('tabPreventivo').disabled = false;
+  renderContesto();
+  renderRighe();
+  aggiornaQuadratura();
+  await caricaEconomics();
+  await caricaStorico();
+  applicaBlocchiStato();
+  vai('preventivo');
+}
+
+function renderContesto() {
+  const p = stato.preventivo, ev = stato.eventoAperto || {};
+  const m = stato.versioniEvento.length || 1;
+  $('ctxEvento').textContent = ev.titolo || '—';
+  $('ctxCliente').textContent = (ev.clienti && ev.clienti.ragione_sociale) ? ev.clienti.ragione_sociale : 'Cliente non assegnato';
+  $('ctxData').textContent = dataIt(ev.data_evento);
+  $('ctxVersione').textContent = 'Versione ' + p.versione + ' di ' + m;
+  $('ctxStato').textContent = STATI_PREV[p.stato] || p.stato;
+  $('testataStato').textContent = p.stato === 'bozza'
+    ? 'In bozza: modificabile liberamente.'
+    : 'Stato ' + (STATI_PREV[p.stato] || p.stato).toLowerCase() + ': contenuto economico e righe bloccati dal database.';
+}
+
+function applicaBlocchiStato() {
+  const bloccato = stato.preventivo.stato !== 'bozza';
+  ['p_numero'].forEach(id => { $(id).readOnly = false; });
+  ['p_modalita','p_aliquota'].forEach(id => { $(id).disabled = bloccato; });
+  ['p_imponibile','p_totale','p_motivazione'].forEach(id => { $(id).readOnly = bloccato; });
+  $('p_ricalcola').disabled = bloccato;
+  $('rigaAdd').disabled = bloccato;
+  $('btnInvia').disabled = stato.preventivo.stato !== 'bozza';
+  $('azioniNota').textContent = bloccato
+    ? 'Per variare importi o righe emetti una nuova versione: questa resta agli atti.'
+    : 'L’invio al cliente rende il preventivo immutabile.';
+  renderRighe();
+}
+
+/* ---------- righe ---------- */
+function rigaVuota() {
+  const maxOrd = stato.righe.reduce((a, r) => Math.max(a, Number(r.ordine) || 0), 0);
+  return { _tmp: 'tmp' + Math.random().toString(36).slice(2), sezione: '', descrizione: '',
+    quantita: 1, unita_misura: '', prezzo_unitario: 0, costo_unitario: 0, totale: 0,
+    visibile_cliente: true, ordine: maxOrd + 1 };
+}
+function renderRighe() {
+  const bloccato = stato.preventivo && stato.preventivo.stato !== 'bozza';
+  const dis = bloccato ? 'disabled' : '';
+  stato.righe.sort((a, b) => (Number(a.ordine) || 0) - (Number(b.ordine) || 0));
+  $('righeBody').innerHTML = stato.righe.map((r, i) => {
+    const k = r.id || r._tmp;
+    return `<tr data-k="${k}">
+      <td><input data-f="sezione" value="${esc(r.sezione || '')}" ${dis}></td>
+      <td><input data-f="descrizione" value="${esc(r.descrizione || '')}" ${dis}></td>
+      <td><input data-f="quantita" class="num w-qta" type="number" step="0.01" min="0" value="${r.quantita ?? 1}" ${dis}></td>
+      <td><input data-f="unita_misura" class="w-um" value="${esc(r.unita_misura || '')}" ${dis}></td>
+      <td><input data-f="prezzo_unitario" class="num w-eur" type="number" step="0.01" min="0" value="${r.prezzo_unitario ?? 0}" ${dis}></td>
+      <td><input data-f="costo_unitario" class="num w-eur" type="number" step="0.01" min="0" value="${r.costo_unitario ?? 0}" ${dis}></td>
+      <td class="r num"><b data-tot>${eur(num2((Number(r.quantita) || 0) * (Number(r.prezzo_unitario) || 0)))}</b></td>
+      <td style="text-align:center"><input data-f="visibile_cliente" type="checkbox" style="width:auto;min-height:2.75rem" ${r.visibile_cliente ? 'checked' : ''} ${dis}></td>
+      <td><div class="ord-btns">
+        <button class="btn btn-icon btn-sm" type="button" data-up aria-label="Sposta su" ${i === 0 || bloccato ? 'disabled' : ''}>↑</button>
+        <button class="btn btn-icon btn-sm" type="button" data-down aria-label="Sposta giù" ${i === stato.righe.length - 1 || bloccato ? 'disabled' : ''}>↓</button>
+      </div></td>
+      <td class="r"><button class="btn btn-icon btn-sm" type="button" data-del aria-label="Elimina riga" ${dis}>✕</button></td>
+    </tr>`;
+  }).join('');
+  $('righeEmpty').hidden = stato.righe.length > 0;
+
+  $('righeBody').querySelectorAll('tr').forEach(tr => {
+    const k = tr.dataset.k;
+    const r = stato.righe.find(x => (x.id || x._tmp) === k);
+    tr.querySelectorAll('[data-f]').forEach(el => {
+      el.addEventListener('input', () => {
+        const f = el.dataset.f;
+        r[f] = (el.type === 'checkbox') ? el.checked : (el.type === 'number' ? (el.value === '' ? 0 : Number(el.value)) : el.value);
+        r.totale = num2((Number(r.quantita) || 0) * (Number(r.prezzo_unitario) || 0));
+        tr.querySelector('[data-tot]').textContent = eur(r.totale);
+        aggiornaQuadratura();
+      });
+    });
+    const bu = tr.querySelector('[data-up]'), bd = tr.querySelector('[data-down]'), bx = tr.querySelector('[data-del]');
+    if (bu) bu.addEventListener('click', () => scambiaOrdine(k, -1));
+    if (bd) bd.addEventListener('click', () => scambiaOrdine(k, +1));
+    if (bx) bx.addEventListener('click', () => {
+      const idx = stato.righe.findIndex(x => (x.id || x._tmp) === k);
+      if (idx < 0) return;
+      const via = stato.righe.splice(idx, 1)[0];
+      if (via.id) stato.righeEliminate.push(via.id);
+      renderRighe(); aggiornaQuadratura();
+    });
+  });
+}
+function scambiaOrdine(k, d) {
+  const i = stato.righe.findIndex(x => (x.id || x._tmp) === k);
+  const j = i + d;
+  if (i < 0 || j < 0 || j >= stato.righe.length) return;
+  const a = stato.righe[i], b = stato.righe[j];
+  const t = Number(a.ordine) || 0; a.ordine = Number(b.ordine) || 0; b.ordine = t;
+  if (a.ordine === b.ordine) { a.ordine = j + 1; b.ordine = i + 1; }
+  renderRighe();
+}
+
+/* ---------- quadratura live ---------- */
+function sommaVisibili() {
+  return num2(stato.righe.filter(r => r.visibile_cliente)
+    .reduce((s, r) => s + num2((Number(r.quantita) || 0) * (Number(r.prezzo_unitario) || 0)), 0));
+}
+function aggiornaQuadratura() {
+  const somma = sommaVisibili();
+  const imp = Number($('p_imponibile').value || 0);
+  const scarto = num2(imp - somma);
+  const n = stato.righe.filter(r => r.visibile_cliente).length;
+  $('ecSomma').textContent = eur(somma);
+  $('ecScarto').textContent = eur(scarto);
+  $('ecNRighe').textContent = n;
+  $('ecScartoLine').classList.toggle('bad', Math.abs(scarto) > 0.01);
+}
+async function caricaEconomics() {
+  try {
+    const e = await db.preventivi.economics(stato.preventivo.id);
+    $('ecCosto').textContent = e ? eur(e.costo_totale) : '—';
+    $('ecMargine').textContent = e ? eur(e.margine) : '—';
+    $('ecMarginePc').textContent = e ? nfEur.format(Number(e.margine_percentuale || 0)) + ' %' : '—';
+  } catch (err) { showError(err, 'Non è stato possibile leggere la vista economics'); }
+}
+
+function toggleMotivazione() {
+  const aCorpo = $('p_modalita').value === 'a_corpo';
+  $('p_motivazioneWrap').hidden = !aCorpo;
+}
+function ricalcolaTotale() {
+  const imp = Number($('p_imponibile').value || 0);
+  const al = Number($('p_aliquota').value || 0);
+  $('p_totale').value = num2(imp * (1 + al / 100)).toFixed(2);
+  validaTotale();
+}
+function validaTotale() {
+  const imp = Number($('p_imponibile').value || 0);
+  const al = Number($('p_aliquota').value || 0);
+  const atteso = num2(imp * (1 + al / 100));
+  const tot = Number($('p_totale').value || 0);
+  segnala($('p_totale'), 'e_p_totale', Math.abs(tot - atteso) <= 0.01);
+}
+
+/* ---------- salvataggio ---------- */
+async function salvaTutto() {
+  clearError();
+  const p = stato.preventivo;
+  if (p.stato === 'bozza') {
+    await db.preventivi.aggiornaTestata(p.id, {
+      numero: $('p_numero').value,
+      imponibile: Number($('p_imponibile').value || 0),
+      aliquota_iva: Number($('p_aliquota').value || 0),
+      totale_ivato: Number($('p_totale').value || 0),
+      modalita_quotazione: $('p_modalita').value,
+      motivazione_scarto: $('p_motivazione').value
+    });
+    for (const id of stato.righeEliminate) await db.righe.elimina(id);
+    stato.righeEliminate = [];
+    for (const r of stato.righe) {
+      const payload = {
+        preventivo_id: p.id, sezione: r.sezione || 'Generale', descrizione: r.descrizione || '—',
+        quantita: Number(r.quantita) || 0, unita_misura: r.unita_misura,
+        prezzo_unitario: Number(r.prezzo_unitario) || 0, costo_unitario: Number(r.costo_unitario) || 0,
+        totale: num2((Number(r.quantita) || 0) * (Number(r.prezzo_unitario) || 0)),
+        visibile_cliente: !!r.visibile_cliente, ordine: Number(r.ordine) || 0
+      };
+      if (r.id) await db.righe.aggiorna(r.id, payload);
+      else { const nuova = await db.righe.crea(payload); r.id = nuova.id; delete r._tmp; }
+    }
+  } else {
+    await db.preventivi.aggiornaTestata(p.id, {
+      numero: $('p_numero').value,
+      imponibile: p.imponibile, aliquota_iva: p.aliquota_iva, totale_ivato: p.totale_ivato,
+      modalita_quotazione: p.modalita_quotazione, motivazione_scarto: p.motivazione_scarto
+    });
+  }
+  stato.preventivo = await db.preventivi.byId(p.id);
+  stato.righe = (await db.righe.byPreventivo(p.id)).map(r => ({ ...r }));
+  renderRighe(); aggiornaQuadratura(); await caricaEconomics();
+  return true;
+}
+
+async function nuovaVersione() {
+  clearError();
+  const p = stato.preventivo;
+  const v = await db.preventivi.prossimaVersione(p.evento_id);
+  const nuovo = await db.preventivi.crea({
+    evento_id: p.evento_id, versione: v, numero: p.numero,
+    imponibile: p.imponibile, aliquota_iva: p.aliquota_iva, totale_ivato: p.totale_ivato,
+    modalita_quotazione: p.modalita_quotazione, motivazione_scarto: p.motivazione_scarto,
+    stato: 'bozza'
+  });
+  const sorgenti = await db.righe.byPreventivo(p.id);
+  if (sorgenti.length) {
+    await db.righe.creaMolte(sorgenti.map(r => ({
+      preventivo_id: nuovo.id, sezione: r.sezione, descrizione: r.descrizione,
+      quantita: r.quantita, unita_misura: r.unita_misura, prezzo_unitario: r.prezzo_unitario,
+      costo_unitario: r.costo_unitario, totale: r.totale,
+      visibile_cliente: r.visibile_cliente, ordine: r.ordine
+    })));
+  }
+  await aprirePreventivo(nuovo.id);
+  showOk('Versione ' + v + ' creata in bozza, con testata e ' + sorgenti.length + ' righe copiate dalla versione ' + p.versione + '.');
+}
+
+/* ---------- storico ---------- */
+async function caricaStorico() {
+  const rows = await db.preventivi.storico(stato.preventivo.id);
+  $('storicoRows').innerHTML = rows.map((s, i) => `
+    <tr>
+      <td class="num">${esc(dataOraIt(s.creato_il))}</td>
+      <td>${s.stato_precedente ? esc(STATI_PREV[s.stato_precedente] || s.stato_precedente) : '<span class="hint">creazione</span>'}</td>
+      <td><b>${esc(STATI_PREV[s.stato_nuovo] || s.stato_nuovo)}</b></td>
+      <td>${esc(s.attore || '—')}</td>
+      <td class="r">${s.snapshot ? `<button class="btn btn-sm" type="button" data-snap="${i}">Vedi contenuto congelato</button>` : ''}</td>
+    </tr>`).join('');
+  $('storicoEmpty').hidden = rows.length > 0;
+  $('storicoRows').querySelectorAll('[data-snap]').forEach(b =>
+    b.addEventListener('click', () => mostraSnapshot(rows[Number(b.dataset.snap)])));
+}
+function mostraSnapshot(s) {
+  const snap = s.snapshot || {};
+  const righe = Array.isArray(snap.righe_visibili) ? snap.righe_visibili : [];
+  $('snapSub').textContent = 'Congelato al passaggio in "' + (STATI_PREV[s.stato_nuovo] || s.stato_nuovo) +
+    '" del ' + dataOraIt(s.creato_il) + ' — sola lettura.';
+  $('snapBody').innerHTML = `
+    <div class="recap">
+      <div><span>Versione</span><b class="num">${esc(snap.versione ?? '—')}</b></div>
+      <div><span>Numero</span><b class="num">${esc(snap.numero || '—')}</b></div>
+      <div><span>Imponibile</span><b class="num">${eur(snap.imponibile)}</b></div>
+      <div><span>Aliquota IVA</span><b class="num">${esc(snap.aliquota_iva ?? '—')}%</b></div>
+      <div><span>Totale ivato</span><b class="num">${eur(snap.totale_ivato)}</b></div>
+      <div><span>Modalità</span><b>${esc(snap.modalita_quotazione || '—')}</b></div>
+    </div>
+    ${snap.motivazione_scarto ? '<p class="hint">Motivazione dello scarto: ' + esc(snap.motivazione_scarto) + '</p>' : ''}
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Sezione</th><th>Descrizione</th><th class="r">Q.tà</th><th class="r">Prezzo un.</th><th class="r">Totale</th></tr></thead>
+      <tbody>${righe.map(r => `<tr>
+        <td>${esc(r.sezione || '')}</td><td>${esc(r.descrizione || '')}</td>
+        <td class="r num">${esc(r.quantita ?? '')}</td>
+        <td class="r num">${eur(r.prezzo_unitario)}</td>
+        <td class="r num">${eur(r.totale)}</td></tr>`).join('')}
+      </tbody>
+    </table></div>
+    ${righe.length ? '' : '<div class="empty">Nessuna riga visibile al cliente in quel momento.</div>'}`;
+  apriModale($('veilSnap'), $('snapChiudi'));
+}
+
+/* ---------- stampa ---------- */
+function costruisciStampa() {
+  const p = stato.preventivo, ev = stato.eventoAperto || {}, cl = ev.clienti || {};
+  const righe = stato.righe.filter(r => r.visibile_cliente)
+    .sort((a, b) => (Number(a.ordine) || 0) - (Number(b.ordine) || 0));
+  const sezioni = [];
+  for (const r of righe) {
+    const s = (r.sezione || 'Generale').trim();
+    let g = sezioni.find(x => x.nome === s);
+    if (!g) { g = { nome: s, righe: [] }; sezioni.push(g); }
+    g.righe.push(r);
+  }
+  const corpo = sezioni.map(g => `
+    <tr><td colspan="5" class="p-sec">${esc(g.nome)}</td></tr>
+    ${g.righe.map(r => `<tr>
+      <td>${esc(r.descrizione || '')}</td>
+      <td class="r">${esc(r.quantita ?? '')}</td>
+      <td>${esc(r.unita_misura || '')}</td>
+      <td class="r">${eur(r.prezzo_unitario)}</td>
+      <td class="r">${eur(num2((Number(r.quantita) || 0) * (Number(r.prezzo_unitario) || 0)))}</td>
+    </tr>`).join('')}`).join('');
+
+  $('printroot').innerHTML = `
+  <div class="prev-page">
+    <div class="p-head">
+      <div class="p-brand">EONICA GROUP<small>Eventi · Comunicazione · Format</small></div>
+      <div class="p-doc">
+        <b>Preventivo${p.numero ? ' n. ' + esc(p.numero) : ''}</b>
+        Versione ${esc(p.versione)}<br>
+        ${esc(new Date().toLocaleDateString('it-IT'))}
+      </div>
+    </div>
+    <div class="p-meta">
+      <div>
+        <div class="k">Cliente</div>
+        <div class="v">${esc(cl.ragione_sociale || '—')}</div>
+        ${cl.referente_nome ? '<div>' + esc(cl.referente_nome) + '</div>' : ''}
+        ${cl.indirizzo ? '<div>' + esc(cl.indirizzo) + '</div>' : ''}
+        ${(cl.cap || cl.citta) ? '<div>' + esc([cl.cap, cl.citta, cl.provincia ? '(' + cl.provincia + ')' : ''].filter(Boolean).join(' ')) + '</div>' : ''}
+        ${cl.partita_iva ? '<div>P.IVA ' + esc(cl.partita_iva) + '</div>' : ''}
+      </div>
+      <div>
+        <div class="k">Evento</div>
+        <div class="v">${esc(ev.titolo || '—')}</div>
+        <div>${esc(dataIt(ev.data_evento))}${ev.ora_inizio ? ' · ' + esc(String(ev.ora_inizio).slice(0, 5)) : ''}</div>
+        ${ev.location_nome ? '<div>' + esc(ev.location_nome) + (ev.location_citta ? ', ' + esc(ev.location_citta) : '') + '</div>' : ''}
+        ${ev.numero_ospiti ? '<div>' + esc(ev.numero_ospiti) + ' ospiti</div>' : ''}
+      </div>
+    </div>
+    <table class="p-tbl">
+      <thead><tr><th>Descrizione</th><th class="r">Q.tà</th><th>U.m.</th><th class="r">Prezzo unitario</th><th class="r">Totale</th></tr></thead>
+      <tbody>${corpo || '<tr><td colspan="5">Nessuna voce di dettaglio.</td></tr>'}</tbody>
+    </table>
+    <div class="p-tot">
+      <div><span>Imponibile</span><span>${eur(p.imponibile)}</span></div>
+      <div><span>IVA ${esc(Number(p.aliquota_iva))}%</span><span>${eur(num2(Number(p.totale_ivato) - Number(p.imponibile)))}</span></div>
+      <div><span>Totale</span><span>${eur(p.totale_ivato)}</span></div>
+    </div>
+    ${p.modalita_quotazione === 'a_corpo' && p.motivazione_scarto
+      ? '<div class="p-note"><b>Quotazione a corpo.</b> ' + esc(p.motivazione_scarto) + '</div>' : ''}
+    <div class="p-foot">
+      <span>Eonica Group S.r.l. — Roma</span>
+      <span>Preventivo v${esc(p.versione)}${p.numero ? ' · n. ' + esc(p.numero) : ''} · ${esc(STATI_PREV[p.stato] || p.stato)}</span>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   collegamenti
+   ============================================================ */
+/* --- tab --- */
+$('tabClienti').addEventListener('click', () => vai('clienti'));
+$('tabEventi').addEventListener('click', () => vai('eventi'));
+$('tabPreventivo').addEventListener('click', () => { if (stato.preventivo) vai('preventivo'); });
+
+/* --- errore --- */
+$('errClose').addEventListener('click', clearError);
+action($('errNewVersion'), async () => { await nuovaVersione(); clearError(); }, 'Creo la versione…');
+
+/* --- clienti --- */
+$('cliSearch').addEventListener('input', renderClienti);
+$('cliSoloAttivi').addEventListener('change', renderClienti);
+$('cliNuovo').addEventListener('click', () => apriCliente(null));
+$('cliAnnulla').addEventListener('click', () => { $('cliForm').hidden = true; });
+disclosure($('cliFattDisc'), $('cliFatt'), 'Dati di fatturazione elettronica', 'Nascondi dati di fatturazione');
+attivaValidazione($('cliForm'));
+action($('cliSalva'), async () => {
+  clearError();
+  if (!validaTutti($('cliForm'))) { showError(new Error('Correggi i campi segnalati in rosso prima di salvare.'), 'Dati non validi'); return; }
+  const obj = {}; CLI_FIELDS.forEach(f => { const el = $('c_' + f); if (el) obj[f] = el.value; });
+  if (obj.provincia) obj.provincia = obj.provincia.toUpperCase();
+  if (obj.codice_fiscale) obj.codice_fiscale = obj.codice_fiscale.toUpperCase();
+  if (obj.codice_destinatario_sdi) obj.codice_destinatario_sdi = obj.codice_destinatario_sdi.toUpperCase();
+  if (stato.clienteInModifica) {
+    obj.attivo = $('c_attivo').checked;
+    await db.clienti.aggiorna(stato.clienteInModifica, obj);
+    showOk('Cliente aggiornato: ' + obj.ragione_sociale + '.');
+  } else {
+    obj.attivo = true;
+    const c = await db.clienti.crea(obj);
+    stato.clienteInModifica = c.id;
+    showOk('Cliente creato: ' + c.ragione_sociale + '.');
+  }
+  await caricaClienti();
+  $('cliForm').hidden = true;
+}, 'Salvo…');
+
+/* --- eventi --- */
+$('evtSearch').addEventListener('input', renderEventi);
+$('evtFiltroStato').addEventListener('change', renderEventi);
+$('evtNuovo').addEventListener('click', () => apriEvento(null));
+$('evtAnnulla').addEventListener('click', () => { $('evtForm').hidden = true; });
+$('evtPrevChiudi').addEventListener('click', () => { $('evtPrev').hidden = true; });
+attivaValidazione($('evtForm'));
+$('v_ora_inizio').addEventListener('input', validaOre);
+$('v_ora_fine').addEventListener('input', validaOre);
+action($('evtSalva'), async () => {
+  clearError();
+  if (!validaTutti($('evtForm')) || !validaOre()) { showError(new Error('Correggi i campi segnalati in rosso prima di salvare.'), 'Dati non validi'); return; }
+  const obj = {}; EVT_FIELDS.forEach(f => { const el = $('v_' + f); if (el) obj[f] = el.value; });
+  obj.numero_ospiti = obj.numero_ospiti === '' ? null : Number(obj.numero_ospiti);
+  if (stato.eventoInModifica) {
+    await db.eventi.aggiorna(stato.eventoInModifica, obj);
+    showOk('Evento aggiornato: ' + obj.titolo + '.');
+  } else {
+    const e = await db.eventi.crea(obj);
+    stato.eventoInModifica = e.id;
+    showOk('Evento creato: ' + e.titolo + '.');
+  }
+  await caricaEventi();
+  $('evtForm').hidden = true;
+}, 'Salvo…');
+
+action($('prevCrea'), async () => {
+  clearError();
+  const ev = stato.eventoAperto;
+  const v = await db.preventivi.prossimaVersione(ev.id);
+  const nuovo = await db.preventivi.crea({
+    evento_id: ev.id, versione: v, imponibile: 0, aliquota_iva: 22, totale_ivato: 0,
+    modalita_quotazione: 'a_misura', stato: 'bozza'
+  });
+  showOk('Preventivo versione ' + v + ' creato in bozza.');
+  await caricaEventi();
+  await aprirePreventivo(nuovo.id);
+}, 'Creo…');
+
+/* --- preventivo: navigazione --- */
+$('crumbClienti').addEventListener('click', () => vai('clienti'));
+$('crumbEventi').addEventListener('click', () => vai('eventi'));
+$('crumbEvento').addEventListener('click', async () => {
+  vai('eventi');
+  if (stato.preventivo) await apriPreventiviEvento(stato.preventivo.evento_id);
+});
+
+/* --- preventivo: testata --- */
+$('p_imponibile').addEventListener('input', () => { validaCampo($('p_imponibile')); ricalcolaTotale(); aggiornaQuadratura(); });
+$('p_aliquota').addEventListener('change', () => { ricalcolaTotale(); });
+$('p_totale').addEventListener('input', validaTotale);
+$('p_ricalcola').addEventListener('click', ricalcolaTotale);
+$('p_modalita').addEventListener('change', toggleMotivazione);
+$('p_motivazione').addEventListener('input', () => {
+  const v = $('p_motivazione').value.trim();
+  const serve = $('p_modalita').value === 'a_corpo' && Math.abs(num2(Number($('p_imponibile').value || 0) - sommaVisibili())) > 0.01;
+  segnala($('p_motivazione'), 'e_p_motivazione', !serve || v.length >= 10);
+});
+$('rigaAdd').addEventListener('click', () => { stato.righe.push(rigaVuota()); renderRighe(); aggiornaQuadratura(); });
+disclosure($('storicoDisc'), $('storicoBody'), 'Storico degli stati', 'Nascondi storico');
+
+action($('btnSalva'), async () => {
+  await salvaTutto();
+  renderContesto(); applicaBlocchiStato();
+  showOk('Salvato. Testata e ' + stato.righe.length + ' righe scritte sul database alle ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '.');
+}, 'Salvo…');
+
+action($('btnNuovaVersione'), async () => { await nuovaVersione(); }, 'Creo la versione…');
+
+/* --- invio: unico dialogo di conferma dell'applicazione --- */
+action($('btnInvia'), async () => {
+  clearError();
+  await salvaTutto();
+  const p = stato.preventivo;
+  $('mImponibile').textContent = eur(p.imponibile);
+  $('mTotale').textContent = eur(p.totale_ivato);
+  $('mRighe').textContent = stato.righe.filter(r => r.visibile_cliente).length;
+  apriModale($('veilInvio'), $('invioConferma'));
+}, 'Preparo…');
+$('invioAnnulla').addEventListener('click', () => chiudiModale($('veilInvio')));
+action($('invioConferma'), async () => {
+  await db.preventivi.cambiaStato(stato.preventivo.id, 'inviato');
+  chiudiModale($('veilInvio'));
+  await aprirePreventivo(stato.preventivo.id);
+  showOk('Preventivo inviato: la versione ' + stato.preventivo.versione + ' è ora visibile al cliente e non è più modificabile.');
+}, 'Invio…');
+$('veilInvio').addEventListener('click', (e) => { if (e.target === $('veilInvio')) chiudiModale($('veilInvio')); });
+$('snapChiudi').addEventListener('click', () => chiudiModale($('veilSnap')));
+$('veilSnap').addEventListener('click', (e) => { if (e.target === $('veilSnap')) chiudiModale($('veilSnap')); });
+
+/* --- link e stampa --- */
+action($('btnCopiaLink'), async () => {
+  const url = LINK_CLIENTE + stato.preventivo.token_accesso;
+  try { await navigator.clipboard.writeText(url); }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  showOk('Link della dashboard cliente copiato negli appunti.');
+}, 'Copio…');
+$('btnStampa').addEventListener('click', () => { costruisciStampa(); window.print(); });
+
+/* ============================================================
+   avvio e autenticazione
+   ============================================================ */
+action($('btnLogin'), async () => {
+  try { await db.signIn(); }
+  catch (e) {
+    $('loginErrMsg').textContent = e.message;
+    $('loginErr').classList.add('on');
+  }
+}, 'Apro Microsoft…');
+action($('btnLogout'), async () => { await db.signOut(); location.reload(); }, 'Esco…');
+
+function mostraLogin() { $('loginScreen').hidden = false; $('app').hidden = true; }
+async function mostraApp(session) {
+  stato.utente = session.user;
+  $('userEmail').textContent = session.user.email || session.user.id;
+  $('loginScreen').hidden = true;
+  $('app').hidden = false;
+  try {
+    await caricaClienti();
+    await caricaEventi();
+  } catch (e) { showError(e, 'Non è stato possibile leggere i dati'); }
+}
+
+(async function avvio() {
+  db.onAuthChange((s) => { if (!s) mostraLogin(); });
+  try {
+    const s = await db.session();
+    if (s) {
+      if (window.location.hash.includes('access_token')) history.replaceState(null, '', window.location.pathname + window.location.search);
+      await mostraApp(s);
+    } else {
+      mostraLogin();
+    }
+  } catch (e) {
+    mostraLogin();
+    $('loginErrMsg').textContent = e.message;
+    $('loginErr').classList.add('on');
+  }
+})();
+</script>
+</body>
+</html>
